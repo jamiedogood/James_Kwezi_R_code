@@ -1,0 +1,196 @@
+---
+title: "Regression, Simulation & Visualization — Class 4"
+author: "Dr. Pacifique (notes prepared by James)"
+date: "2025-10-08"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    df_print: default
+  pdf_document: default
+---
+
+> Extracted and cleaned from class materials. All code is runnable in RStudio.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+set.seed(123)
+```
+
+# Regression
+
+Regression analyses the relationship between a **dependent** (outcome) variable and one or more **independent** (predictor) variables.
+
+## Types of Regression
+
+| Type | Description |
+|------|--------------|
+| Simple Linear | Predicts a quantitative response from one quantitative explanatory variable |
+| Polynomial | Uses powers of a quantitative variable to model nonlinear trends |
+| Multiple Linear | Predicts a quantitative response from two or more explanatory variables |
+| Multilevel | For hierarchical data (e.g., students within schools) |
+| Multivariate | Predicts multiple responses from one or more explanatory variables |
+| Logistic | Predicts a categorical (binary) outcome |
+| Poisson | For count data |
+| Cox Proportional Hazards | For survival or time-to-event data |
+| Time-Series | For correlated temporal data |
+| Nonlinear | For inherently nonlinear relationships |
+| Nonparametric | For relationships determined from data shape, not predefined equations |
+| Robust | Resistant to outliers |
+
+## Linear Model Basics
+
+- Used to predict a continuous variable  
+- Expressed as: \( y = b_0 + b_1x + e \)
+- Residuals = prediction errors  
+- RSS = Residual Sum of Squares  
+- MSE = Mean Square Error  
+- RMSE = Root Mean Square Error  
+
+“All models are wrong, but some are useful.” — George Box
+
+# OLS Regression in R
+
+```{r}
+data("women")
+fit <- lm(weight ~ height, data = women)
+summary(fit)
+```
+
+```{r}
+plot(women$height, women$weight,
+     xlab = "Height (in inches)",
+     ylab = "Weight (in pounds)")
+abline(fit, col = "blue", lwd = 2)
+```
+
+# Polynomial Regression
+
+```{r}
+fit2 <- lm(weight ~ height + I(height^2), data = women)
+summary(fit2)
+
+plot(women$height, women$weight,
+     xlab = "Height (in inches)",
+     ylab = "Weight (in pounds)")
+lines(women$height, fitted(fit2), col = "red", lwd = 2)
+```
+
+# Regression Diagnostics
+
+```{r}
+par(mfrow = c(2, 2))
+plot(fit)
+```
+
+Assumptions checked:
+
+1. **Normality** – residuals follow a normal distribution  
+2. **Independence** – errors are independent  
+3. **Linearity** – relationship between predictors and response is linear  
+4. **Homoscedasticity** – variance of residuals is constant  
+
+If violated, consider transformations, adding terms, or other model types.
+
+# Multiple Linear Regression (Exercise)
+
+```r
+# Homework: Find a dataset, fit multiple linear regression, and interpret results
+```
+
+# Example — mtcars
+
+```{r}
+model <- lm(mpg ~ wt, data = mtcars)
+summary(model)
+
+plot(mpg ~ wt, data = mtcars)
+abline(model, col = "darkgreen", lwd = 2)
+```
+
+Interpretation: For every 1-unit increase in weight, miles per gallon decreases by about 5.3.
+
+```{r}
+predict(model, newdata = data.frame(wt = 6))
+```
+
+# Simulation in R
+
+Simulation introduces randomness — useful for bootstrapping, testing, and modeling.
+
+## Random Numbers
+
+```{r}
+rnorm(5)
+set.seed(1)
+rnorm(5)
+```
+
+## Simulating a Linear Model
+
+```{r}
+set.seed(20)
+x <- rnorm(100)
+e <- rnorm(100, 0, 2)
+y <- 0.5 - 2 * x + e
+
+plot(x, y, main = "Simulated Linear Model")
+```
+
+# Sampling
+
+```{r}
+set.seed(1)
+sample(1:10, 4)
+sample(letters, 5)
+sample(1:10, replace = TRUE)
+```
+
+# Data Visualization
+
+```{r}
+country <- c("Australia", "Austria", "Belgium","Canada","Denmark","Finland","France","Germany","Greece","Ireland","Italy","Japan","Netherland","New Zealand","Norway","Portugal","Spain","Sweden","Switzerland","UK","USA")
+Income.inequality <- c(7.0,4.8,4.6,5.6,4.3,3.7,5.6,5.2,6.2,6.0,6.7,3.4,5.3,6.8,3.9,8.0,5.5,4.0,5.7,7.2,8.6)
+Index.HS <- c(0.07,0.01,-0.23,-0.07,-0.19,-0.43,0.05,-0.06,0.38,0.25,-0.12,-1.26,-0.51,0.29,-0.63,1.18,-0.30,-0.83,-0.46,0.79,2.02)
+GDP_WB <- c(45926,47682,43435,45066,45537,30676,39328,46401,26851,49393,35463,36319,48253,37679,65615,28760,33629,45297,59540,40233,54630)
+
+data.21 <- data.frame(country, Income.inequality, Index.HS, GDP_WB)
+
+plot(data.21[c("Income.inequality","Index.HS")], pch = 20, col = "red")
+text(data.21$Income.inequality, data.21$Index.HS, labels = data.21$country, pos = 4, cex = 0.7)
+title(main = "Income Inequality vs Health & Social Index",
+      xlab = "Income Inequality (5th Ratio)",
+      ylab = "Index of Health & Social Problems")
+text(x = 5, y = 1.5, labels = paste("r =", round(cor(data.21$Income.inequality, data.21$Index.HS), 2)))
+```
+
+# Linear Fit Overlay
+
+```{r}
+lm.ineq <- lm(Index.HS ~ Income.inequality, data = data.21)
+abline(lm.ineq, col = "blue", lwd = 2)
+```
+
+# Advanced Example — Random Pathway Simulation
+
+```{r}
+set.seed(1002)
+n <- 30
+p <- 5
+z <- matrix(runif(n * p, 0, 1), nrow = n, ncol = p)
+x <- 3 * cos(z[,1]) + 2 * rnorm(n)
+x <- as.matrix(x)
+beta.true <- rep(1, ncol(x))
+
+hfun1 <- function(zvec) (10 * cos(zvec[1]) - 15 * (zvec[2])^2 + 10 * exp(-zvec[3]) * zvec[4] - 8 * sin(zvec[5]) * cos(zvec[3]) + 20 * (zvec[1] * zvec[5]))
+h1 <- apply(z, 1, hfun1)
+eps <- rnorm(n)
+y <- x * beta.true + h1 + eps
+
+plot(y ~ x, main = "Simulated Pathway Relationship")
+```
+
+```{r}
+sessionInfo()
+```

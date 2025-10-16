@@ -1,0 +1,280 @@
+---
+title: "R Programming — Control Structures, Functions & Apply Family (Class 2 — Continued)"
+author: "Dr. Pacifique (notes prepared by James)"
+date: "2025-10-05"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    df_print: default
+  pdf_document: default
+---
+
+> Extracted and cleaned from the provided PDF. Fixed line-wrap artefacts and typos so all examples run in a fresh R session.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+set.seed(1)
+```
+
+# Control structures
+
+Control structures let you add *logic* to R programs so code can react to inputs or data. Common structures:
+
+- `if` / `else`
+- `for`
+- `while`
+- `repeat` (use `break` to exit)
+- `break` (exit current loop)
+- `next` (skip to next iteration)
+
+## if / else
+
+```{r}
+x <- runif(1, 0, 10)
+
+if (x > 3) {
+  y <- 10
+} else {
+  y <- 0
+}
+y
+
+# Equivalent as a single expression:
+y2 <- if (x > 3) 10 else 0
+y2
+```
+
+Vectorised `ifelse()` is handy for labeling results:
+
+```{r}
+pvalues <- c(.867, 0.0054, 0.0018, 0.1572, 0.0183, 0.5386)
+results <- ifelse(pvalues < 0.05, "Significant", "Not significant")
+results
+```
+
+## for loops
+
+```{r}
+for (i in 1:10) {
+  print(i)
+}
+
+x <- c("a", "b", "c", "d")
+for (i in 1:5) print(x[i])      # note: x[5] is NA
+
+for (i in 1:5) print(1:i)
+for (i in 5:1) print(1:i)
+```
+
+## while loops
+
+```{r}
+count <- 1
+while (count < 10) {
+  print(count)
+  count <- count + 1
+}
+
+z <- 5
+while (z >= 3 && z <= 10) {
+  coin <- rbinom(1, 1, 0.5)
+  if (coin == 1) {
+    z <- z + 1
+  } else {
+    z <- z - 1
+  }
+}
+z
+```
+
+## next and break
+
+```{r}
+for (i in 1:100) {
+  print(1:i)
+  if (i > 20) break
+}
+```
+
+# Functions in R
+
+Template:
+
+```r
+name <- function(parameters) {
+  # statements
+  return(value)
+}
+```
+
+Examples (correcting math typos from the PDF):
+
+```{r}
+f1 <- function(x) {
+  x^2 + 2
+}
+f1(4)
+
+f2 <- function(x, y) {
+  x^2 + y^2 - 4
+}
+f2(3, 5)
+
+f <- function(x, y) {
+  x + (2 * y) + 3
+}
+f(2, 3)
+
+args(mean)        # see parameter names & defaults
+```
+
+# *apply family
+
+Apply a function over rows/columns or elements of data structures.
+
+```{r}
+# Matrix example
+m <- matrix(runif(12), nrow = 3)
+m
+log(m)
+mean(m)                  # over all 12 elements
+
+# Row/column summaries
+rowMeans(m)
+colSums(m)
+
+# apply: margin = 1 (rows), 2 (columns)
+apply(m, 1, mean)
+apply(m, 2, mean)
+```
+
+## `lapply`, `sapply`, `vapply`
+
+```{r}
+# Fix a "sentinel" missing value and square numbers
+fix_missing <- function(x) {
+  x[x == -99] <- NA
+  x
+}
+square <- function(x) x^2
+
+df <- data.frame(a = c(1, -99, 3),
+                 b = c(4, 5, -99),
+                 c = c(-99, 2, 9))
+
+# Apply to all columns and keep a data.frame
+df[] <- lapply(df, fix_missing)
+str(df)
+
+# Transform a subset
+df[1:2] <- lapply(df[1:2], square)
+df
+```
+
+## `split`/`tapply` and multi-way `apply`
+
+```{r}
+# Titanic is a 4D contingency table
+str(Titanic)
+
+# Collapsing across dimensions
+apply(Titanic, c(1, 2), sum)         # Class x Sex
+apply(Titanic, c(1, 4), sum)[3:4, ]  # Class x Survived for 3rd & Crew
+apply(Titanic, c(1, 2, 4), sum)[3:4, , ]
+
+ft <- ftable(apply(Titanic, c(1, 4, 2), sum)[3:4, , ])
+ft
+
+# Column-wise proportions
+prop.table(ft[1:2, ], margin = 2)
+prop.table(ft[3:4, ], margin = 2)
+```
+
+# Mini project — student performance (standardise, score, grade)
+
+```{r}
+Student <- c("John Ncuti","Angela Bakame","Bruce Wizeye","Alexis Aganze",
+             "Claude Rukundo","Joel Kagabo","Mary Ineza")
+Math    <- c(600, 412, 358, 495, 512, 410, 522)
+Science <- c(95,  99,  80,  82,  75,  89,  77)
+English <- c(25,  22,  18,  20,  29,  30,  27)
+
+roster <- data.frame(Student, Math, Science, English, stringsAsFactors = FALSE)
+
+# Standardise subject scores (different scales)
+z <- scale(roster[, c("Math","Science","English")])
+
+# Performance score: row means of z-scores
+score <- rowMeans(z)
+roster <- cbind(roster, score)
+
+# Grade by quantiles
+cuts <- quantile(score, c(.8, .6, .4, .2))
+roster$grade <- NA_character_
+roster$grade[score >= cuts[1]] <- "A"
+roster$grade[score <  cuts[1] & score >= cuts[2]] <- "B"
+roster$grade[score <  cuts[2] & score >= cuts[3]] <- "C"
+roster$grade[score <  cuts[3] & score >= cuts[4]] <- "D"
+roster$grade[score <  cuts[4]] <- "F"
+
+# Split full names into first/last (using last token as last name)
+name_parts <- strsplit(roster$Student, " ")
+lastname  <- vapply(name_parts, function(x) tail(x, 1), character(1))
+firstname <- vapply(name_parts, function(x) paste(x[-length(x)], collapse = " "), character(1))
+
+roster2 <- cbind(firstname, lastname, roster[, -1])
+roster2 <- roster2[order(lastname, firstname), ]
+roster2
+```
+
+# Aggregation & reshaping
+
+## Transpose example
+
+```{r}
+cars <- mtcars[1:5, 1:4]
+cars
+t(cars)
+```
+
+## `aggregate()` by multiple keys
+
+```{r}
+options(digits = 3)
+aggdata <- aggregate(mtcars,
+                     by = list(cyl = mtcars$cyl, gear = mtcars$gear),
+                     FUN = mean, na.rm = TRUE)
+head(aggdata)
+```
+
+## Reshape with `reshape2` (melt/cast)
+
+```{r, eval=FALSE}
+# install.packages("reshape2")
+library(reshape2)
+
+id  <- c(1, 1, 2, 2)
+time<- c(1, 2, 1, 2)
+x1  <- c(5, 3, 6, 2)
+x2  <- c(6, 5, 1, 4)
+mydata <- data.frame(id, time, x1, x2)
+
+m <- melt(mydata, id.vars = c("id","time"))
+dcast(m, id ~ variable, mean)        # wide
+dcast(m, id + time ~ variable, sum)  # tall
+```
+
+# Quick index / Table of contents (topics covered)
+- Control structures (`if`/`else`, `for`, `while`, `break`, `next`)
+- Functions and return values
+- `apply`, `lapply`, `sapply`, `vapply`
+- Titanic multi-way tables and proportions
+- Student grading mini-project (standardisation + quantiles)
+- Aggregation with `aggregate()`
+- Reshaping with `reshape2`
+
+```{r}
+sessionInfo()
+```

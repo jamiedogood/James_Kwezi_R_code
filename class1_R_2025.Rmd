@@ -1,0 +1,291 @@
+---
+title: "R for Data Science — Class 1 (Extracted & Knit-Ready)"
+author: "Dr. Pacifique (notes prepared by James)"
+date: "2025-09-14"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    df_print: default
+  pdf_document: default
+---
+
+> Extracted from class notes. Code adjusted where necessary to be runnable in an R Markdown environment.
+
+# Important definitions in data science
+
+- **Statistics**
+- **Modelling**
+- **Computation**
+- **Calculus**
+
+# Today’s class — Agenda
+
+- Installation of R *(reference)*
+- Installation of RStudio *(reference)*
+- Calculator in R
+- Data importation in R
+- Data description using numerical measures and graphs
+- Data structures (Vectors, Factors, Lists, Data frame, Matrix and Arrays)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Vectors — The foundational R data structure
+
+## Numeric
+```{r}
+x_num <- c(0.5, 0.6)
+age <- c(20, 35, 32, 29)
+summary(age)
+
+age <- c(35, 24, 18, 24)
+mean(age)
+```
+
+## Logical
+```{r}
+x_log1 <- c(TRUE, FALSE)
+x_log2 <- c(T, F)
+```
+
+## Character
+```{r}
+x_char <- c("a", "b", "c")
+class_vec <- c("M","F","F","M")
+```
+
+## Integer
+```{r}
+x_int <- 9:29
+```
+
+## Complex
+```{r}
+x_cx <- c(1+0i, 2+4i)
+```
+
+# Matrices and basic operations
+
+```{r}
+x <- matrix(1:6, nrow = 2, ncol = 3)
+x
+
+(y <- matrix(1:6, nrow = 3, ncol = 2))
+
+x %*% y
+```
+
+# Lists
+
+```{r}
+x_list <- list(1, "a", TRUE, 1 + 4i)
+x_list
+```
+
+# Factors
+
+```{r}
+x_fac <- factor(c("yes", "yes", "no", "yes", "no"))
+x_fac
+```
+
+# Missing values (NA)
+
+```{r}
+x <- c(1, 2, NA, 10, 3)
+is.na(x)
+
+x2 <- c(1, 2, 4, "NA", 5)
+bad <- is.na(x2)
+bad
+x2[!bad]
+```
+
+What if there are multiple objects and you want only the rows with no missing values in any of them?
+
+```{r}
+x <- c(1, 2, NA, 4, NA, 5)
+y <- c("a", "b", NA, "d", NA, "f")
+good <- complete.cases(x, y)
+good
+```
+
+# Coercion
+
+- If a **character** is present in a vector, R converts everything to **character**.
+- If a vector only contains **logical** and **numeric**, R converts logicals to numbers (`TRUE` → 1, `FALSE` → 0).
+
+```{r}
+sum(c(TRUE, TRUE, FALSE, FALSE, FALSE))
+```
+
+# Creating data frames
+
+Data frames can contain mixed types (numeric, character, etc.).
+
+```{r}
+studentID <- c(1, 2, 3, 4, 5)
+math_score <- c(12, 17, 10, 9, NA)
+gender <- c("M","F","M","M","F")
+it_score <- c(13, 18, 11, 10, 19)
+scoredata <- data.frame(studentID, gender, math_score, it_score)
+scoredata
+# View(scoredata)  # interactive; disabled in Rmd
+```
+
+## Creating data via editor (interactive; for reference)
+
+```{r, eval=FALSE}
+data_class2 <- data.frame(height=numeric(0), weight=numeric(0), bmi=numeric(0))
+data_class2 <- edit(data_class2)
+```
+
+# Data importation (illustrations)
+
+R can import from Excel, statistical packages (SAS/SPSS/Stata), text (CSV/TSV/JSON/XML), and databases (SQL/MySQL/Oracle/Access).
+
+```{r, eval=FALSE}
+# Example: text file (adjust path)
+data_class <- read.table("C:/path/to/class_data.txt", header = TRUE)
+variable.names(data_class)
+head(data_class)
+tail(data_class)
+data_class[10:20, ]
+summary(data_class$WEIGHT)
+length(data_class$WEIGHT)
+data_class[, -1]
+```
+
+# Built-in datasets
+
+```{r}
+data("airquality")
+variable.names(airquality)
+str(airquality)
+```
+
+# Exploratory data analysis (EDA)
+
+For the following, we’ll reconstruct `data_class` to make the notebook self-contained.
+
+```{r}
+data_class <- data.frame(
+  HEIGHT = c(161,155,158,170,160,156,162,158,158,167,160,155,154,155,157,157,160,158,160,160,152,154,150,161,162,164,161,155,159,163,159,160,158,165,156,163,155,164,163,168,157,164),
+  WEIGHT = c(50,49,42,65,60,52,58,46,45,51,60,42,53,48,48,48,53,52,51,53,44,56,63,52,57,49,52,54,46,50,61,55,45,63,60,56,52,47,52,55,48,58)
+)
+data_class
+```
+
+## Summary statistics
+
+```{r}
+summary(data_class)
+apply(data_class, 2, mean)
+apply(data_class, 2, sd)
+
+c(Mean = mean(data_class$HEIGHT), SD = sd(data_class$HEIGHT))
+c(Mean = mean(data_class$WEIGHT), SD = sd(data_class$WEIGHT))
+```
+
+## Variation & covariation (numeric and graphs)
+
+### Categorical vs continuous — `iris`
+
+```{r}
+data("iris")
+head(iris)
+
+mean(iris$Petal.Length)
+by(iris$Petal.Length, iris$Species, mean)
+by(iris$Petal.Length, iris$Species, sd)
+by(iris$Petal.Length, iris$Species, summary)
+
+boxplot(Sepal.Length ~ Species, data = iris, main = "Comparison")
+```
+
+### Two categorical variables — `UCBAdmissions`
+
+```{r}
+ucba <- data.frame(UCBAdmissions)
+head(ucba)
+
+cross <- xtabs(Freq ~ Gender + Admit, data = ucba)
+cross
+
+# Proportions by column (admission outcome)
+prop.table(cross, 2)
+
+# Simpson's paradox illustration — Department A only
+cross_A <- xtabs(Freq ~ Gender + Admit, data = subset(ucba, Dept == "A"))
+prop.table(cross_A, 1)
+```
+
+# Bar charts
+
+```{r}
+dat1 <- read.table(text ="ProdA ProdB ProdC ProdD
+1 110 50 60 70
+2 120 50 80 65", header= TRUE)
+
+barplot(as.matrix(dat1), beside = FALSE)
+
+dat2 <- read.table(text = "A B C D E F G
+1 10 80 30 90 70 60 90
+2 20 50 70 50 40 10 40
+3 60 80 80 60 60 30 160
+4 20 40 70 80 20 10 70", header = TRUE)
+
+barplot(as.matrix(dat2))
+```
+
+# Scatter plot & correlation
+
+```{r}
+plot(WEIGHT ~ HEIGHT, data = data_class)
+cor(data_class$HEIGHT, data_class$WEIGHT)
+```
+
+# Linear models
+
+```{r}
+plot(WEIGHT ~ HEIGHT, data = data_class)
+abline(lm(WEIGHT ~ HEIGHT, data = data_class))
+
+data_lm <- lm(WEIGHT ~ HEIGHT, data = data_class)
+summary(data_lm)
+```
+
+# Histograms
+
+```{r}
+hist(data_class$HEIGHT)
+hist(data_class$WEIGHT)
+```
+
+# Linear fit vs smoother
+
+```{r}
+plot(WEIGHT ~ HEIGHT, data = data_class)
+abline(lm(WEIGHT ~ HEIGHT, data = data_class))
+lines(lowess(data_class$HEIGHT, data_class$WEIGHT))
+```
+
+# Data management — Create another variable (BMI)
+
+```{r}
+BMI <- with(data_class, WEIGHT / (HEIGHT/100)^2)
+BMI <- round(BMI, digits = 2)
+
+head(cbind(data_class, BMI), 5)
+tail(cbind(data_class, BMI), 10)
+```
+
+## Summary of BMI
+
+```{r}
+summary(BMI)
+stem(BMI, scale = 2)
+```
